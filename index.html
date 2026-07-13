@@ -73,6 +73,9 @@
   --shadow-panel-sm:0 1px 2px rgba(58,44,24,.13), 0 6px 14px rgba(58,44,24,.1), 0 18px 40px rgba(58,44,24,.07);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+input,textarea,[contenteditable]{-webkit-user-select:text;user-select:text}
 /* DEFERRED FEATURES — v1 hides, v1.1 restores. Registry: PARABLE-LEDGER.md.
    Re-enable any item by deleting its data-deferred attribute. */
 [data-deferred]{display:none !important}
@@ -1348,14 +1351,15 @@ body::before{
   <p class="lib-foot"><img decoding="async" id="foot-seal" alt=""><br>Parable 1.0 — Chat for Fable 5<br><a href="#" class="foot-link">Terms</a> · <a href="#" class="foot-link">Privacy</a> · Not affiliated with Anthropic.</p>
 </section>
 
+<script src="capacitor.js"></script>
 <script>
 "use strict";
 /* ================= v30 · LIVE CONFIG (one-time, in-app) ================= */
 const LS = (typeof localStorage !== "undefined") ? localStorage : { getItem:()=>null, setItem(){}, removeItem(){} };
 const CONFIG = {
   SUPABASE_URL: "https://jrbjertovyitdfrvvhea.supabase.co",
-  WORKER_URL: LS.getItem("parable_worker") || "",
-  SUPABASE_ANON_KEY: LS.getItem("parable_anon") || "",
+  WORKER_URL: LS.getItem("parable_worker") || "https://parable-api.muttyrabb.workers.dev",
+  SUPABASE_ANON_KEY: LS.getItem("parable_anon") || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpyYmplcnRvdnlpdGRmcnZ2aGVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjM2MzgsImV4cCI6MjA5OTE5OTYzOH0.7MdLxx6Rlkijo8G0tYJGxtX1Aitza6sYEgAQz0ysxBw",
 };
 function __LIVE(){ return !!(CONFIG.WORKER_URL && CONFIG.SUPABASE_ANON_KEY); }
 window.__LIVE = __LIVE;
@@ -1368,6 +1372,9 @@ window.addEventListener("error", e => {
     t.textContent = "\u26A0 " + (e.message || "Script error");
     t.classList.add("show");
   }catch(_){}
+});
+window.addEventListener("unhandledrejection", e => {
+  try{ showToast("Error: " + ((e.reason && e.reason.message) || e.reason || "unknown")); }catch(_){}
 });
 window.addEventListener("unhandledrejection", e => {
   try{
@@ -2667,6 +2674,13 @@ if(__LIVE()){
     signedIn = false;
     $id("onboard").classList.remove("gone");
   }
+}
+
+/* v33: boot ping — only speaks up when something is wrong */
+if(__LIVE() && !(session && session.access_token)){
+  fetch(CONFIG.WORKER_URL + "/v1/me").then(r => {
+    if(!(r.status === 401 || r.ok)) showToast("Backend answered " + r.status);
+  }).catch(() => showToast("Can\u2019t reach the backend \u2014 check your connection"));
 }
 </script>
 </body>
